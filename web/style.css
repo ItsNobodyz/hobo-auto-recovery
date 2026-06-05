@@ -1,0 +1,199 @@
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html, body {
+  background: transparent !important;
+  font-family: 'Courier New', Courier, monospace;
+  user-select: none;
+  /* Prevent the full-screen NUI frame from blocking game mouse input */
+  pointer-events: none;
+}
+
+#scanner-panel {
+  position: fixed;
+  right: 28px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: rgba(8, 10, 18, 0.96);
+  border: 1px solid rgba(0, 200, 255, 0.25);
+  border-radius: 10px;
+  padding: 12px 16px;
+  min-width: 230px;
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(0,200,255,0.05);
+  pointer-events: auto;
+}
+
+#scanner-panel.hidden {
+  display: none;
+}
+
+/* ── Version label ── */
+#version-label {
+  text-align: center;
+  font-size: 9px;
+  color: rgba(255,255,255,0.18);
+  margin-top: 6px;
+  letter-spacing: 0.05em;
+}
+
+/* ── Resize handle (bottom-right corner) ── */
+#resize-handle {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  width: 16px;
+  height: 16px;
+  cursor: se-resize;
+  pointer-events: auto;
+  background: linear-gradient(135deg, transparent 50%, rgba(0, 200, 255, 0.25) 50%);
+  border-radius: 0 0 10px 0;
+}
+#resize-handle:hover {
+  background: linear-gradient(135deg, transparent 50%, rgba(0, 200, 255, 0.55) 50%);
+}
+
+/* ── Header ── */
+.scanner-header {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  color: #00c8ff;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 2.5px;
+  text-transform: uppercase;
+  cursor: move;
+}
+
+.dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #00c8ff;
+  flex-shrink: 0;
+  animation: dot-pulse 1.6s ease-in-out infinite;
+}
+
+.header-text {
+  flex: 1;
+}
+
+.keybind {
+  color: rgba(255, 255, 255, 0.28);
+  font-size: 9px;
+  letter-spacing: 1px;
+}
+
+/* v1.4.4: duty grace-period countdown. Same yellow as the per-row .calibrating
+   state so operators recognise the relationship at a glance. Pulses softly to
+   draw the eye without being annoying. */
+.cal-timer {
+  margin-left: 8px;
+  padding: 1px 6px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: rgba(255, 200, 0, 0.95);
+  border: 1px solid rgba(255, 200, 0, 0.6);
+  border-radius: 8px;
+  background: rgba(255, 200, 0, 0.06);
+  animation: cal-pulse 1.4s ease-in-out infinite;
+}
+.cal-timer.hidden { display: none; }
+@keyframes cal-pulse { 50% { opacity: 0.55; } }
+
+.divider {
+  height: 1px;
+  background: rgba(0, 200, 255, 0.15);
+  margin: 8px 0;
+}
+
+/* ── Plate rows ── */
+.plate-row {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 5px 0;
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.38);
+  transition: color 0.25s ease, text-shadow 0.25s ease;
+}
+
+.plate-row .arrow {
+  color: rgba(0, 200, 255, 0.5);
+  font-size: 9px;
+  width: 10px;
+  flex-shrink: 0;
+  transition: color 0.25s ease;
+}
+
+.plate-row .plate-text {
+  flex: 1;
+  letter-spacing: 2.5px;
+  font-weight: 700;
+  font-size: 14px;
+}
+
+.plate-row .status-badge {
+  font-size: 9px;
+  letter-spacing: 1.5px;
+  font-weight: 700;
+  text-transform: uppercase;
+  padding: 1px 5px;
+  border-radius: 3px;
+  flex-shrink: 0;
+}
+
+/* ── State: scanning (vehicle in range, not repo) ── */
+.plate-row.scanning {
+  color: rgba(255, 255, 255, 0.82);
+}
+.plate-row.scanning .arrow {
+  color: #00c8ff;
+}
+.plate-row.scanning .status-badge {
+  color: rgba(160, 160, 160, 0.7);
+  background: rgba(255,255,255,0.04);
+}
+
+/* ── State: calibrating (duty grace period) ── */
+.plate-row.calibrating {
+  color: rgba(255, 255, 255, 0.55);
+}
+.plate-row.calibrating .arrow {
+  color: rgba(255, 200, 0, 0.5);
+}
+.plate-row.calibrating .status-badge {
+  color: rgba(255, 200, 0, 0.8);
+  background: rgba(255, 200, 0, 0.08);
+  border: 1px solid rgba(255, 200, 0, 0.2);
+}
+
+/* ── State: lockon (repo detected) ── */
+.plate-row.lockon {
+  color: #ff8c3a;
+  animation: lockon-pulse 0.55s ease-in-out infinite;
+  text-shadow: 0 0 10px rgba(255, 100, 20, 0.6);
+}
+.plate-row.lockon .arrow {
+  color: #ff8c3a;
+}
+.plate-row.lockon .status-badge {
+  color: #fff;
+  background: rgba(255, 100, 20, 0.35);
+  border: 1px solid rgba(255, 100, 20, 0.5);
+}
+
+/* ── Animations ── */
+@keyframes dot-pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50%       { opacity: 0.25; transform: scale(0.8); }
+}
+
+@keyframes lockon-pulse {
+  0%, 100% { color: #ff8c3a; text-shadow: 0 0 10px rgba(255,100,20,0.6); }
+  50%       { color: #ffb060; text-shadow: 0 0 18px rgba(255,150,50,0.9); }
+}

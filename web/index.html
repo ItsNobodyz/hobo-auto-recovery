@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="en" style="background:transparent">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="tablet.css">
+</head>
+<body style="background:transparent">
+
+  <!-- ─── Plate scanner (F6) ──────────────────────────────────────────────── -->
+  <div id="scanner-panel" class="hidden">
+    <div class="scanner-header">
+      <span class="dot"></span>
+      <span class="header-text">PLATE SCANNER</span>
+      <span class="keybind" id="keybind-label"></span>
+      <!-- v1.4.4: live countdown for the duty grace period. Populated by app.js
+           from the gracePeriod / graceLeft fields on the updatePlates message
+           the Lua scan loop already sends every 100 ms. Hidden after grace ends. -->
+      <span class="cal-timer hidden" id="cal-timer">CAL —s</span>
+    </div>
+    <div class="divider"></div>
+    <div class="plate-row" id="plate-0">
+      <span class="arrow">▶</span>
+      <span class="plate-text">——————</span>
+      <span class="status-badge">—</span>
+    </div>
+    <div class="plate-row" id="plate-1">
+      <span class="arrow"> </span>
+      <span class="plate-text">——————</span>
+      <span class="status-badge">—</span>
+    </div>
+    <div id="resize-handle" title="Drag to resize"></div>
+    <div id="version-label"></div>
+  </div>
+
+  <!-- ─── /towtab tablet (DRN-style ALPR dashboard) ───────────────────────── -->
+  <div id="tablet" class="hidden">
+    <header class="tab-titlebar">
+      <span class="tab-brand">
+        <span class="brand-dot"></span>
+        <span class="brand-name">HOBO</span>
+        <span class="brand-sub">Auto-Recovery</span>
+      </span>
+      <span class="tab-user">
+        <span class="tab-user-label">User Name:</span>
+        <span id="tab-user-name">—</span>
+      </span>
+      <span class="tab-region">
+        <span class="tab-user-label">Region:</span>
+        <span id="tab-region-name">US Mobile</span>
+      </span>
+      <span class="tab-leds">
+        <span class="led on" title="Camera1">Cam1</span>
+        <span class="led on" title="Camera2">Cam2</span>
+        <span class="led on" title="Camera3">Cam3</span>
+        <span class="led on" title="Camera4">Cam4</span>
+        <span class="led on" title="Server">Server</span>
+        <span class="led on" title="GPS">GPS</span>
+        <span class="led on" title="System">System</span>
+      </span>
+    </header>
+
+    <div class="tab-body">
+      <aside class="tab-sidebar">
+        <button class="tab-sb-btn active" data-pane="feed">SETUP</button>
+        <button class="tab-sb-btn"        data-pane="search">CHECK PLATE</button>
+        <button class="tab-sb-btn"        data-pane="cases">CASE REPORT</button>
+        <button class="tab-sb-btn"        data-pane="theme">NIGHT THEME</button>
+        <button class="tab-sb-btn exit"   id="tab-exit">EXIT</button>
+      </aside>
+
+      <section class="tab-main">
+
+        <nav class="tab-cams">
+          <button class="cam-tab active" data-cam="ALL">ALL</button>
+          <button class="cam-tab"        data-cam="FRONT-RIGHT">RIGHT FRONT</button>
+          <button class="cam-tab"        data-cam="REAR-RIGHT">RIGHT REAR</button>
+          <button class="cam-tab"        data-cam="FRONT-LEFT">LEFT FRONT</button>
+          <button class="cam-tab"        data-cam="REAR-LEFT">LEFT REAR</button>
+          <span class="cam-support">HOBO Dispatch — Standalone Mode</span>
+        </nav>
+
+        <!-- FEED PANE: live ALPR view + hit list -->
+        <div class="tab-pane" data-pane="feed" data-active="1">
+          <div class="feed-grid">
+            <div class="feed-main">
+              <div class="feed-logo" id="feed-logo">
+                <div class="feed-spinner"></div>
+                <div class="feed-tag">HOBO ALPR</div>
+              </div>
+            </div>
+            <div class="feed-side">
+              <div class="feed-side-cam">
+                <div class="feed-side-cam-stub"></div>
+                <div class="feed-side-plate" id="feed-side-plate">——————</div>
+                <div class="feed-side-plate-sub" id="feed-side-plate-sub">——————</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="hit-strip">
+            <div class="hit-title">Hit List</div>
+            <ul class="hit-list" id="hit-list"></ul>
+            <div class="hit-controls">
+              <button id="hit-view">View Info</button>
+              <button id="hit-clear">Clear Hit</button>
+              <button id="hit-clear-all">Clear Hit List</button>
+            </div>
+          </div>
+
+          <div class="scan-table-wrap">
+            <table class="scan-table">
+              <thead>
+                <tr>
+                  <th class="col-img">Image</th>
+                  <th class="col-plate">License Plate</th>
+                  <th class="col-loc">Location</th>
+                  <th class="col-driver">Driver</th>
+                </tr>
+              </thead>
+              <tbody id="scan-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- SEARCH PANE: manual plate lookup -->
+        <div class="tab-pane" data-pane="search">
+          <div class="search-box">
+            <label>Plate Number</label>
+            <input type="text" id="search-input" maxlength="8" placeholder="e.g. ABC1234" autocomplete="off">
+            <button id="search-go">Check Plate</button>
+          </div>
+          <div class="search-result" id="search-result">
+            <div class="search-empty">Enter a plate above to look it up.</div>
+          </div>
+        </div>
+
+        <!-- CASES PANE: active repo orders (marker-confirmed plates only) -->
+        <div class="tab-pane" data-pane="cases">
+          <div class="cases-section">
+            <h2>Active Repo Orders <span class="count" id="orders-count">0</span></h2>
+            <div class="cases-list" id="orders-list"></div>
+          </div>
+        </div>
+
+        <!-- THEME PANE -->
+        <div class="tab-pane" data-pane="theme">
+          <div class="theme-row">
+            <label><input type="checkbox" id="opt-night-theme"> Night theme (darker palette)</label>
+          </div>
+          <div class="theme-row">
+            <label><input type="checkbox" id="opt-callouts" checked> Side audio callouts on repo hits</label>
+          </div>
+          <div class="theme-row">
+            <label>Callout volume
+              <input type="range" id="opt-volume" min="0" max="100" value="90">
+            </label>
+          </div>
+        </div>
+
+      </section>
+    </div>
+
+    <footer class="tab-statusbar">
+      <span>Vehicles Spotted: <strong id="stat-spotted">0</strong></span>
+      <span>Repossessed Vehicles: <strong id="stat-repos">0</strong></span>
+      <span class="sep">|</span>
+      <span>Hot-List: <strong id="stat-hotlist-status">Synchronized</strong></span>
+      <span>Hot-List Count: <strong id="stat-hotlist-count">0</strong></span>
+      <span class="sep">|</span>
+      <span>Camera System: <strong>VLP</strong></span>
+      <span>Local Time: <strong id="stat-time">--:--:--</strong></span>
+      <span>Version: <strong id="stat-version">—</strong></span>
+    </footer>
+
+    <!-- Info modal: opened by clicking a hit-list plate or active-order row, or
+         by the "View Info" button (multi-plate mode). Dismissable by Esc, the
+         backdrop, or the close button. -->
+    <div id="info-modal" class="hidden" aria-hidden="true">
+      <div class="info-backdrop"></div>
+      <div class="info-window">
+        <header class="info-titlebar">
+          <span id="info-title">Plate Info</span>
+          <button id="info-close" aria-label="Close">×</button>
+        </header>
+        <div class="info-body" id="info-body"></div>
+      </div>
+    </div>
+
+    <!-- Bottom-right corner resize handle (drag to resize the tablet). -->
+    <div id="tablet-resize-handle" title="Drag to resize"></div>
+  </div>
+
+  <!-- v1.4.2: standalone alert overlay used by camera + tow alerts. Lives OUTSIDE
+       #tablet so it can appear even when the tablet is closed; lives outside
+       the scanner panel for the same reason. Mouse-only (no keyboard grab) so
+       WASD/steering keep firing while the operator decides. -->
+  <div id="alert-overlay" class="hidden" aria-hidden="true">
+    <div class="alert-card">
+      <header class="alert-header">
+        <span class="alert-dot"></span>
+        <span id="alert-title">Plate hit</span>
+      </header>
+      <div class="alert-body" id="alert-body"></div>
+      <footer class="alert-buttons">
+        <button id="alert-confirm">Mark on Map</button>
+        <button id="alert-cancel">Ignore</button>
+      </footer>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+  <script src="tablet.js"></script>
+</body>
+</html>
