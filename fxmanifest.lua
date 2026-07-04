@@ -39,6 +39,7 @@ server_scripts {
     'server/payments.lua',
     'server/spawner.lua',
     'server/main.lua',
+    'server/updater.lua',
     'server/duty.lua'
 }
 
